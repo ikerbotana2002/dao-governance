@@ -68,23 +68,31 @@ contract GovernanceTokenTest is Test {
         vm.prank(alice);
         token.delegate(alice);
 
-        uint256 snapshotBlock = block.number;
+        // Read the current block without compiler caching.
+        uint256 snapshotBlock = vm.getBlockNumber();
 
-        // Move to the next block.
-        vm.roll(block.number + 1);
+        // Advance to the next simulated block.
+        vm.roll(snapshotBlock + 1);
+
+        // Confirm the token sees the new block number.
+        assertEq(uint256(token.clock()), snapshotBlock + 1);
 
         vm.prank(alice);
         token.transfer(bob, 100 ether);
 
+        // Historical votes remain unchanged.
         assertEq(token.getPastVotes(alice, snapshotBlock), 500 ether);
 
+        // Current votes reflect the transfer.
         assertEq(token.getVotes(alice), 400 ether);
     }
 
     function testHistoricalTotalSupply() public {
-        uint256 snapshotBlock = block.number;
+        uint256 snapshotBlock = vm.getBlockNumber();
 
-        vm.roll(block.number + 1);
+        vm.roll(snapshotBlock + 1);
+
+        assertEq(uint256(token.clock()), snapshotBlock + 1);
 
         assertEq(token.getPastTotalSupply(snapshotBlock), 1_000 ether);
     }
